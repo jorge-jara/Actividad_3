@@ -1,0 +1,214 @@
+Árboles de decisión
+Los arboles de decisión son representaciones gráficas de posibles soluciones a una decisión basadas en ciertas condiciones, es uno de los algoritmos de aprendizaje supervisado más utilizados en machine learning
+
+from anytree import Node, RenderTree
+
+root = Node(10)
+
+level_1_child_1 = Node(34, parent=root)
+level_1_child_2 = Node(89, parent=root)
+level_2_child_1 = Node(45, parent=level_1_child_1)
+level_2_child_2 = Node(50, parent=level_1_child_2)
+
+for pre, fill, node in RenderTree(root):
+    print("%s%s" % (pre, node.name))
+import numpy as np
+import matplotlib.pyplot as plt
+ 
+from sklearn.datasets import load_iris
+from sklearn.tree import DecisionTreeClassifier
+ 
+# Parametros
+n_classes = 3
+plot_colors = "ryg"
+plot_step = 0.2
+ 
+# Carga de datos
+iris = load_iris()
+ 
+for pairidx, pair in enumerate([[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]]):
+  # Solo nos centramos en 2 caracteristicas
+  X = iris.data[:, pair]
+  y = iris.target
+ 
+  # entrenamiento
+  clf = DecisionTreeClassifier().fit(X, y)
+ 
+  # ploteamos la desicion de frontera
+  plt.subplot(2, 3, pairidx + 1)
+ 
+  x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+  y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+  xx, yy = np.meshgrid(np.arange(x_min, x_max, plot_step),
+  np.arange(y_min, y_max, plot_step))
+  plt.tight_layout(h_pad=0.5, w_pad=0.5, pad=2.5)
+ 
+  Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+  Z = Z.reshape(xx.shape)
+  cs = plt.contourf(xx, yy, Z, cmap=plt.cm.RdYlGn)
+ 
+  plt.xlabel(iris.feature_names[pair[0]])
+  plt.ylabel(iris.feature_names[pair[1]])
+ 
+  # ploteamos los puntos de entrenamiento
+  for i, color in zip(range(n_classes), plot_colors):
+    idx = np.where(y == i)
+    plt.scatter(X[idx, 0], X[idx, 1], c=color, label=iris.target_names[i], cmap=plt.cm.RdYlBu, edgecolor='black', s=15)
+ 
+plt.suptitle("Superficie de decisión de un árbol de decisión utilizando características apareadas")
+plt.legend(loc='lower right', borderpad=0, handletextpad=0)
+plt.axis("tight")
+plt.show()
+​
+
+Regresión Logística
+La regresión logística es un método estadístico que trata de modelar la probabilidad de una variable cualitativa binaria (dos posibles valores) en función de una o más variables independientes. La principal aplicación de la regresión logística es la creación de modelos de clasificación binaria.
+
+# Tratamiento de datos
+# ==============================================================================
+import pandas as pd
+import numpy as np
+​
+# Gráficos
+# ==============================================================================
+import matplotlib.pyplot as plt
+from matplotlib import style
+import seaborn as sns
+​
+# Preprocesado y modelado
+# ==============================================================================
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+from statsmodels.stats.weightstats import ttest_ind
+​
+# Configuración matplotlib
+# ==============================================================================
+plt.rcParams['image.cmap'] = "bwr"
+#plt.rcParams['figure.dpi'] = "100"
+plt.rcParams['savefig.bbox'] = "tight"
+style.use('ggplot') or plt.style.use('ggplot')
+​
+# Configuración warnings
+# ==============================================================================
+import warnings
+warnings.filterwarnings('ignore')
+# Datos
+# ==============================================================================
+matricula = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1,
+                     0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1,
+                     0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0,
+                     0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
+                     1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0,
+                     1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1,
+                     1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1,
+                     0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+                     0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0,
+                     0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0,
+                     0, 0, 0, 0, 1, 0, 0, 0, 1, 1])
+​
+matematicas = np.array([
+                  41, 53, 54, 47, 57, 51, 42, 45, 54, 52, 51, 51, 71, 57, 50, 43,
+                  51, 60, 62, 57, 35, 75, 45, 57, 45, 46, 66, 57, 49, 49, 57, 64,
+                  63, 57, 50, 58, 75, 68, 44, 40, 41, 62, 57, 43, 48, 63, 39, 70,
+                  63, 59, 61, 38, 61, 49, 73, 44, 42, 39, 55, 52, 45, 61, 39, 41,
+                  50, 40, 60, 47, 59, 49, 46, 58, 71, 58, 46, 43, 54, 56, 46, 54,
+                  57, 54, 71, 48, 40, 64, 51, 39, 40, 61, 66, 49, 65, 52, 46, 61,
+                  72, 71, 40, 69, 64, 56, 49, 54, 53, 66, 67, 40, 46, 69, 40, 41,
+                  57, 58, 57, 37, 55, 62, 64, 40, 50, 46, 53, 52, 45, 56, 45, 54,
+                  56, 41, 54, 72, 56, 47, 49, 60, 54, 55, 33, 49, 43, 50, 52, 48,
+                  58, 43, 41, 43, 46, 44, 43, 61, 40, 49, 56, 61, 50, 51, 42, 67,
+                  53, 50, 51, 72, 48, 40, 53, 39, 63, 51, 45, 39, 42, 62, 44, 65,
+                  63, 54, 45, 60, 49, 48, 57, 55, 66, 64, 55, 42, 56, 53, 41, 42,
+                  53, 42, 60, 52, 38, 57, 58, 65])
+​
+datos = pd.DataFrame({'matricula': matricula, 'matematicas': matematicas})
+datos.head(3)
+# Número de obsercaciones por clase
+# ==============================================================================
+datos.matricula.value_counts().sort_index()
+# Gráfico
+# ==============================================================================
+fig, ax = plt.subplots(figsize=(6, 3.84))
+​
+sns.violinplot(
+        x     = 'matricula',
+        y     = 'matematicas',
+        data  = datos,
+        #color = "white",
+        ax    = ax
+    )
+​
+ax.set_title('Distribución notas de matemáticas por clase');
+
+Regresión Lineal
+La regresión lineal es una de las técnicas más usadas en Machine Learning. Su fortaleza estriba en su simplicidad e interpretabilidad. La regresión polinómica, como ya veremos, es una extensión de la regresión lineal.
+
+import numpy as np 
+import matplotlib.pyplot as plt 
+%matplotlib inline 
+from sklearn.linear_model import LinearRegression
+def f(x):  
+    np.random.seed(42) 
+    y = 0.1*x + 1.25 + 0.2*np.random.randn(x.shape[0])
+    return y
+x = np.arange(0, 20, 0.5) 
+y = f(x) 
+​
+plt.scatter(x,y,label='data', color='blue')
+plt.title('Datos');
+# Importamos la clase de Regresión Lineal de scikit-learn
+from sklearn.linear_model import LinearRegression 
+regresion_lineal = LinearRegression() # creamos una instancia de LinearRegression
+# instruimos a la regresión lineal que aprenda de los datos (x,y)
+regresion_lineal.fit(x.reshape(-1,1), y) 
+# vemos los parámetros que ha estimado la regresión lineal
+print('w = ' + str(regresion_lineal.coef_) + ', b = ' + str(regresion_lineal.intercept_))
+# resultado: w = [0.09183522], b = 1.2858792525736682
+w = [0.09183522], b = 1.2858792525736682
+
+ARIMA
+ARIMA es una abreviatura que representa AutoRegressive Incorporated Moving Normal. Es una clase de modelos que capta un conjunto de varias estructuras mundanas estándar en la información de la disposición del tiempo.
+
+En este ejercicio de instrucción, encontrará cómo construir un modelo ARIMA para la información del arreglo de tiempo con Python.
+
+K-means
+El algoritmo trabaja iterativamente para asignar a cada “punto” (las filas de nuestro conjunto de entrada forman una coordenada) uno de los “K” grupos basado en sus características. Son agrupados en base a la similitud de sus features (las columnas).
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sb
+from sklearn.cluster import KMeans
+from sklearn.metrics import pairwise_distances_argmin_min
+​
+%matplotlib inline
+from mpl_toolkits.mplot3d import Axes3D
+plt.rcParams['figure.figsize'] = (16, 9)
+plt.style.use('ggplot')
+dataframe = pd.read_csv(r"analisis.csv")
+dataframe.head()
+dataframe.describe()
+print(dataframe.groupby('categoria').size())
+dataframe.drop(['categoria'],1).hist()
+plt.show()
+categoria
+1    27
+2    34
+3     9
+4    19
+5     4
+6     8
+7    17
+8    16
+9     6
+dtype: int64
+
+A priori
+El algoritmo Apriori es un algoritmo de machine learning que se utiliza para obtener información sobre las relaciones estructuradas entre los diferentes elementos involucrados. La aplicación práctica más destacada del algoritmo es recomendar productos basados ​​en los productos ya presentes en el carrito del usuario.
+
+import numpy as np 
+import pandas as pd 
+from mlxtend.frequent_patterns import apriori, association_rules 
